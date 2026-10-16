@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VPS Storage & Release Gateway</title>
+  
+  <!-- Modern Typography: Inter & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Remix Icons for crisp modern vector icons -->
+  <link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet">
+  
+  <!-- Custom Stylesheets -->
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Top Navigation Bar -->
+    <header class="top-navbar">
+      <a href="#releases" class="brand">
+        <div class="brand-icon">
+          <i class="ri-rocket-2-fill"></i>
+        </div>
+        <div class="brand-text">
+          <h1>VPS Release & Storage</h1>
+          <span>Self-Hosted Distribution Hub</span>
+        </div>
+      </a>
+
+      <nav>
+        <ul class="nav-links">
+          <li>
+            <a href="#releases" class="nav-item active" data-view="releases">
+              <i class="ri-git-branch-line"></i> Releases & Updates
+            </a>
+          </li>
+          <li>
+            <a href="#storage" class="nav-item" data-view="storage">
+              <i class="ri-hard-drive-2-line"></i> File Storage
+            </a>
+          </li>
+          <li>
+            <a href="#keys" class="nav-item" data-view="keys">
+              <i class="ri-key-2-line"></i> API Keys
+            </a>
+          </li>
+          <li>
+            <a href="#integration" class="nav-item" data-view="integration">
+              <i class="ri-code-box-line"></i> App Integration
+            </a>
+          </li>
+          <li>
+            <a href="/docs" target="_blank" class="nav-item">
+              <i class="ri-book-open-line"></i> Swagger Docs <i class="ri-external-link-line" style="font-size: 0.75rem;"></i>
+            </a>
+          </li>
+        </ul>
+      </nav>
+
+      <div class="nav-actions">
+        <div id="auth-status-btn" class="auth-badge" title="Click to manage API key">
+          <div class="status-dot"></div>
+          <span id="auth-role-label">Master Admin</span>
+          <i class="ri-shield-keyhole-line" style="color: var(--accent-cyan);"></i>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Content Body -->
+    <main class="main-content">
+      <!-- ==================== VIEW 1: RELEASES ==================== -->
+      <section id="view-releases" class="view-section">
+        <div class="view-header">
+          <div class="view-title">
+            <h2>Applications & Releases</h2>
+            <p>Deploy application versions, distribute APK / binaries, and manage client auto-updates.</p>
+          </div>
+          <div class="filter-group">
+            <button class="btn btn-secondary" id="btn-new-app">
+              <i class="ri-add-line"></i> New Application
+            </button>
+            <button class="btn btn-primary" id="btn-new-release">
+              <i class="ri-upload-cloud-2-line"></i> Publish New Release
+            </button>
+          </div>
+        </div>
+
+        <!-- System Metrics Row -->
+        <div class="metrics-row">
+          <div class="metric-card glass-panel">
+            <div class="metric-icon"><i class="ri-apps-2-line"></i></div>
+            <div class="metric-data">
+              <h3 id="stat-apps-count">1</h3>
+              <span>Registered Apps</span>
+            </div>
+          </div>
+          <div class="metric-card violet glass-panel">
+            <div class="metric-icon"><i class="ri-price-tag-3-line"></i></div>
+            <div class="metric-data">
+              <h3 id="stat-releases-count">0</h3>
+              <span>Total Releases</span>
+            </div>
+          </div>
+          <div class="metric-card emerald glass-panel">
+            <div class="metric-icon"><i class="ri-download-cloud-line"></i></div>
+            <div class="metric-data">
+              <h3 id="stat-downloads-count">0</h3>
+              <span>Total Asset Downloads</span>
+            </div>
+          </div>
+          <div class="metric-card amber glass-panel">
+            <div class="metric-icon"><i class="ri-database-2-line"></i></div>
+            <div class="metric-data">
+              <h3 id="stat-storage-size">0 MB</h3>
+              <span>Disk Space Used</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Release Filters -->
+        <div class="filter-bar">
+          <div class="filter-group">
+            <span style="font-size: 0.85rem; color: var(--text-dim); font-weight: 600;">Filter App:</span>
+            <select id="filter-app-select" class="form-control" style="padding: 0.35rem 0.75rem; width: auto; min-width: 180px;">
+              <option value="">All Applications</option>
+            </select>
+
+            <span style="font-size: 0.85rem; color: var(--text-dim); font-weight: 600; margin-left: 0.5rem;">Platform:</span>
+            <select id="filter-platform-select" class="form-control" style="padding: 0.35rem 0.75rem; width: auto;">
+              <option value="all">All Platforms</option>
+              <option value="android">Android (APK)</option>
+              <option value="windows">Windows</option>
+              <option value="linux">Linux</option>
+              <option value="ios">iOS</option>
+            </select>
+          </div>
+
+          <div class="filter-group">
+            <button class="btn btn-secondary btn-sm" id="btn-refresh-releases">
+              <i class="ri-refresh-line"></i> Refresh
+            </button>
+          </div>
+        </div>
+
+        <!-- Releases Container -->
+        <div id="releases-container" class="releases-list">
+          <div class="empty-state glass-panel">
+            <div class="empty-state-icon"><i class="ri-git-commit-line"></i></div>
+            <h3>No Releases Published Yet</h3>
+            <p>Click "Publish New Release" to create a version and attach binary packages (APK, EXE, ZIP).</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== VIEW 2: FILE STORAGE ==================== -->
+      <section id="view-storage" class="view-section" style="display: none;">
+        <div class="view-header">
+          <div class="view-title">
+            <h2>Universal File Storage</h2>
+            <p>High-speed object storage for 3D models, firmware, documents, and assets with direct public links.</p>
+          </div>
+          <button class="btn btn-primary" id="btn-trigger-upload-modal">
+            <i class="ri-upload-line"></i> Upload Files
+          </button>
+        </div>
+
+        <!-- Bucket Pills & Search Bar -->
+        <div class="filter-bar">
+          <div class="filter-group" id="bucket-pills-container">
+            <button class="pill-select active" data-bucket="all">All Buckets</button>
+            <button class="pill-select" data-bucket="general">general</button>
+            <button class="pill-select" data-bucket="firmware">firmware</button>
+            <button class="pill-select" data-bucket="models">models</button>
+            <button class="pill-select" data-bucket="images">images</button>
+            <button class="pill-select" data-bucket="docs">docs</button>
+          </div>
+
+          <div class="search-input-box">
+            <i class="ri-search-line search-icon"></i>
+            <input type="text" id="storage-search-input" placeholder="Search files by name...">
+          </div>
+        </div>
+
+        <!-- Quick Upload Dropzone -->
+        <div class="quick-upload-dropzone glass-panel" id="storage-dragzone" style="margin-bottom: 1.5rem; padding: 2rem;">
+          <i class="ri-upload-cloud-2-line" style="font-size: 2.5rem; color: var(--accent-cyan); display: block; margin-bottom: 0.5rem;"></i>
+          <h4 style="font-size: 1rem; color: #fff; margin-bottom: 0.25rem;">Drag and drop files here to upload</h4>
+          <span>or click to browse from your computer (stored in active bucket)</span>
+          <input type="file" id="storage-file-input" style="display: none;" multiple>
+        </div>
+
+        <!-- Files Grid -->
+        <div id="files-grid-container" class="files-grid">
+          <!-- Dynamically populated files -->
+        </div>
+      </section>
+
+      <!-- ==================== VIEW 3: API KEYS ==================== -->
+      <section id="view-keys" class="view-section" style="display: none;">
+        <div class="view-header">
+          <div class="view-title">
+            <h2>API Keys & Security</h2>
+            <p>Control programmatic access for CI/CD pipelines, Flutter mobile apps, and backend services.</p>
+          </div>
+          <button class="btn btn-primary" id="btn-generate-key">
+            <i class="ri-key-fill"></i> Generate New Key
+          </button>
+        </div>
+
+        <!-- Master Key Info Card -->
+        <div class="glass-panel" style="padding: 1.5rem; margin-bottom: 1.5rem; border-left: 4px solid var(--accent-emerald);">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+            <div>
+              <h4 style="color: #fff; margin-bottom: 0.25rem; font-size: 1.05rem;">Master Environment Key</h4>
+              <p style="font-size: 0.85rem; color: var(--text-dim);">Configured via <code>MASTER_KEY</code> in server <code>.env</code> file. Grants unrestricted root administrative access.</p>
+            </div>
+            <div style="display: flex; align-items: center; gap: 0.5rem;">
+              <span class="tag-badge" style="background: rgba(16, 185, 129, 0.1); color: var(--accent-emerald); border-color: rgba(16, 185, 129, 0.3);">
+                Root Admin Active
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Keys Table -->
+        <div class="glass-panel" style="overflow-x: auto;">
+          <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9rem;">
+            <thead>
+              <tr style="border-bottom: 1px solid var(--border-subtle); color: var(--text-dim); font-size: 0.8rem; text-transform: uppercase;">
+                <th style="padding: 1rem 1.25rem;">Key Name</th>
+                <th style="padding: 1rem 1.25rem;">Role / Permission</th>
+                <th style="padding: 1rem 1.25rem;">API Key Token</th>
+                <th style="padding: 1rem 1.25rem;">Created Date</th>
+                <th style="padding: 1rem 1.25rem;">Last Used</th>
+                <th style="padding: 1rem 1.25rem; text-align: right;">Action</th>
+              </tr>
+            </thead>
+            <tbody id="keys-table-body">
+              <!-- Dynamically populated -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ==================== VIEW 4: APP INTEGRATION ==================== -->
+      <section id="view-integration" class="view-section" style="display: none;">
+        <div class="view-header">
+          <div class="view-title">
+            <h2>Client App Integration Guide</h2>
+            <p>How to consume this VPS API for automatic updates and direct file downloads in Flutter and other apps.</p>
+          </div>
+        </div>
+
+        <!-- Live Endpoint Interactive Tester -->
+        <div class="glass-panel" style="padding: 1.5rem; margin-bottom: 2rem;">
+          <h3 style="font-size: 1.15rem; margin-bottom: 0.75rem; color: #fff;">
+            <i class="ri-terminal-box-line" style="color: var(--accent-cyan);"></i> Live Auto-Update Checker Test
+          </h3>
+          <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem;">
+            Test the live response that your Flutter app will receive when calling <code>GET /api/v1/releases/latest</code>.
+          </p>
+
+          <div style="display: flex; gap: 1rem; align-items: flex-end; flex-wrap: wrap;">
+            <div class="form-group" style="min-width: 180px;">
+              <label>Target App</label>
+              <select id="test-app-id" class="form-control">
+                <option value="toho_egs">toho_egs</option>
+              </select>
+            </div>
+            <div class="form-group" style="min-width: 150px;">
+              <label>Platform</label>
+              <select id="test-platform" class="form-control">
+                <option value="android">android</option>
+                <option value="windows">windows</option>
+                <option value="all">all</option>
+              </select>
+            </div>
+            <div class="form-group" style="min-width: 150px;">
+              <label>Client Current Version</label>
+              <input type="text" id="test-version" class="form-control" value="v1.0.0" placeholder="e.g. v1.0.0">
+            </div>
+            <button class="btn btn-primary" id="btn-run-client-test" style="height: 40px;">
+              <i class="ri-play-fill"></i> Test Endpoint
+            </button>
+          </div>
+
+          <!-- Test Output Box -->
+          <div class="code-box" style="margin-top: 1.25rem;">
+            <div class="code-box-header">
+              <span id="test-endpoint-url">GET /api/v1/releases/latest?app=toho_egs&platform=android&current_version=v1.0.0</span>
+              <button class="checksum-btn" id="btn-copy-test-json">Copy JSON</button>
+            </div>
+            <pre id="test-response-pre">// Click "Test Endpoint" to see live API payload...</pre>
+          </div>
+        </div>
+
+        <!-- Code Snippet Tabs -->
+        <div class="glass-panel" style="padding: 1.5rem;">
+          <h3 style="font-size: 1.15rem; margin-bottom: 1rem; color: #fff;">
+            <i class="ri-code-s-slash-line" style="color: var(--accent-emerald);"></i> Integration Snippets
+          </h3>
+
+          <div class="filter-group" style="margin-bottom: 1rem;">
+            <button class="pill-select active" id="tab-snippet-flutter">Flutter (Dart)</button>
+            <button class="pill-select" id="tab-snippet-curl">cURL / Bash</button>
+            <button class="pill-select" id="tab-snippet-node">Node.js (Axios/Fetch)</button>
+          </div>
+
+          <!-- Snippet: Flutter -->
+          <div id="snippet-flutter" class="code-box">
+            <div class="code-box-header">
+              <span>lib/core/services/update_service.dart</span>
+              <button class="checksum-btn btn-copy-code">Copy Code</button>
+            </div>
+            <pre><code>import 'dart:convert';
+import 'package:http/http.dart' as http;
+
+class UpdateService {
+  static const String baseUrl = 'http://YOUR_VPS_IP:3000';
+  static const String appId = 'toho_egs';
+
+  /// Checks if a new version is available on the VPS
+  static Future&lt;Map&lt;String, dynamic&gt;?&gt; checkForUpdate(String currentVersion) async {
+    final uri = Uri.parse('$baseUrl/api/v1/releases/latest?app=$appId&amp;platform=android&amp;current_version=$currentVersion');
+    
+    try {
+      final response = await http.get(uri);
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body)['data'];
+        
+        if (data['has_update'] == true) {
+          return {
+            'hasUpdate': true,
+            'isMandatory': data['is_mandatory'] ?? false,
+            'latestVersion': data['latest_version'],
+            'releaseTitle': data['release_title'],
+            'releaseNotes': data['release_notes'],
+            'downloadUrl': data['primary_asset']?['download_url'],
+            'sha256': data['primary_asset']?['sha256'],
+          };
+        }
+      }
+    } catch (e) {
+      print('Update check failed: $e');
+    }
+    return null;
+  }
+}</code></pre>
+          </div>
+
+          <!-- Snippet: cURL -->
+          <div id="snippet-curl" class="code-box" style="display: none;">
+            <div class="code-box-header">
+              <span>Terminal / Bash Script</span>
+              <button class="checksum-btn btn-copy-code">Copy Command</button>
+            </div>
+            <pre><code># 1. Check latest release metadata
+curl -X GET "http://YOUR_VPS_IP:3000/api/v1/releases/latest?app=toho_egs&platform=android"
+
+# 2. Download the latest APK directly
+curl -L -O "http://YOUR_VPS_IP:3000/api/v1/releases/download/ASSET_ID/app.apk"
+
+# 3. Upload a new file to universal storage
+curl -X POST "http://YOUR_VPS_IP:3000/api/v1/storage/upload" \
+  -H "x-api-key: YOUR_MASTER_KEY" \
+  -F "bucket=firmware" \
+  -F "file=@sensor_driver.bin"</code></pre>
+          </div>
+
+          <!-- Snippet: Node -->
+          <div id="snippet-node" class="code-box" style="display: none;">
+            <div class="code-box-header">
+              <span>Node.js / TypeScript Client</span>
+              <button class="checksum-btn btn-copy-code">Copy Code</button>
+            </div>
+            <pre><code>import fetch from 'node-fetch';
+
+async function checkRelease() {
+  const res = await fetch('http://YOUR_VPS_IP:3000/api/v1/releases/latest?app=toho_egs');
+  const json = await res.json();
+  
+  if (json.data.has_update) {
+    console.log(`New version found: ${json.data.latest_version}`);
+    console.log(`Download: ${json.data.primary_asset.download_url}`);
+  } else {
+    console.log('App is up to date.');
+  }
+}</code></pre>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- ==================== MODALS ==================== -->
+
+  <!-- Modal: Publish New Release -->
+  <div class="modal-overlay" id="modal-release">
+    <div class="modal-window">
+      <div class="modal-header">
+        <h3>Publish New Release</h3>
+        <button class="modal-close" data-close="modal-release">&times;</button>
+      </div>
+      <form id="form-create-release">
+        <div class="modal-body">
+          <div class="form-row">
+            <div class="form-group">
+              <label>Target Application *</label>
+              <select id="rel-app-id" class="form-control" required></select>
+            </div>
+            <div class="form-group">
+              <label>Tag / Version *</label>
+              <input type="text" id="rel-tag" class="form-control" placeholder="e.g. v1.2.0" required>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Release Title *</label>
+            <input type="text" id="rel-title" class="form-control" placeholder="e.g. Major RTK Sensor Calibration Update" required>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>Build Number</label>
+              <input type="number" id="rel-build" class="form-control" value="1" min="1" required>
+            </div>
+            <div class="form-group">
+              <label>Target Platform</label>
+              <select id="rel-platform" class="form-control">
+                <option value="android">Android (APK)</option>
+                <option value="windows">Windows (EXE/MSIX)</option>
+                <option value="linux">Linux</option>
+                <option value="ios">iOS</option>
+                <option value="all">Universal / All</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Minimum Supported Version (Optional)</label>
+            <input type="text" id="rel-min-ver" class="form-control" placeholder="e.g. v1.0.0 (forces mandatory update if client < this)">
+          </div>
+
+          <div class="form-row">
+            <label class="checkbox-label">
+              <input type="checkbox" id="rel-is-mandatory">
+              <span><strong>Mandatory Update</strong> (Urgent update prompt)</span>
+            </label>
+            <label class="checkbox-label">
+              <input type="checkbox" id="rel-is-prerelease">
+              <span>Pre-release / Beta Channel</span>
+            </label>
+          </div>
+
+          <div class="form-group">
+            <label>Release Notes / Changelog (Markdown supported)</label>
+            <textarea id="rel-notes" class="form-control" rows="4" placeholder="- Added dual-antenna calibration&#10;- Improved GPS signal tracking&#10;- Fixed sensor angle freeze issue"></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-close="modal-release">Cancel</button>
+          <button type="submit" class="btn btn-primary">Create Release</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Create New App -->
+  <div class="modal-overlay" id="modal-app">
+    <div class="modal-window" style="max-width: 480px;">
+      <div class="modal-header">
+        <h3>Register Application</h3>
+        <button class="modal-close" data-close="modal-app">&times;</button>
+      </div>
+      <form id="form-create-app">
+        <div class="modal-body">
+          <div class="form-group">
+            <label>App Identifier (Unique Slug) *</label>
+            <input type="text" id="app-new-id" class="form-control" placeholder="e.g. toho_egs, excavator_tab" required>
+          </div>
+          <div class="form-group">
+            <label>Display Name *</label>
+            <input type="text" id="app-new-name" class="form-control" placeholder="e.g. Toho EGS 3D Guidance" required>
+          </div>
+          <div class="form-group">
+            <label>Description</label>
+            <textarea id="app-new-desc" class="form-control" rows="2" placeholder="Brief description of this software package"></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-close="modal-app">Cancel</button>
+          <button type="submit" class="btn btn-primary">Register App</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Upload Asset to Release -->
+  <div class="modal-overlay" id="modal-upload-asset">
+    <div class="modal-window" style="max-width: 520px;">
+      <div class="modal-header">
+        <h3>Attach Binary Package</h3>
+        <button class="modal-close" data-close="modal-upload-asset">&times;</button>
+      </div>
+      <form id="form-upload-asset">
+        <input type="hidden" id="asset-target-release-id">
+        <div class="modal-body">
+          <div style="background: rgba(6, 182, 212, 0.1); border-left: 3px solid var(--accent-cyan); padding: 0.75rem 1rem; border-radius: var(--radius-sm); font-size: 0.85rem;">
+            Attaching file to release: <strong id="asset-target-release-title">-</strong>
+          </div>
+          <div class="form-group">
+            <label>Select Binary File (.apk, .exe, .zip, .bin, etc.) *</label>
+            <input type="file" id="asset-file-input" class="form-control" required>
+          </div>
+          <div id="asset-upload-progress-box" style="display: none;">
+            <div style="display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 0.35rem;">
+              <span id="asset-upload-status">Uploading & hashing SHA-256...</span>
+              <span id="asset-upload-percent">0%</span>
+            </div>
+            <div style="height: 6px; background: rgba(255, 255, 255, 0.1); border-radius: 999px; overflow: hidden;">
+              <div id="asset-upload-bar" style="height: 100%; width: 0%; background: var(--accent-cyan); transition: width 0.2s;"></div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-close="modal-upload-asset">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="btn-submit-asset-upload">Upload Asset</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Upload to Universal Storage -->
+  <div class="modal-overlay" id="modal-storage-upload">
+    <div class="modal-window" style="max-width: 540px;">
+      <div class="modal-header">
+        <h3>Upload File to Storage</h3>
+        <button class="modal-close" data-close="modal-storage-upload">&times;</button>
+      </div>
+      <form id="form-storage-upload">
+        <div class="modal-body">
+          <div class="form-group">
+            <label>Bucket / Folder *</label>
+            <input type="text" id="storage-bucket-input" class="form-control" value="general" placeholder="e.g. firmware, models, images, docs" required>
+          </div>
+          <div class="form-group">
+            <label>Select File *</label>
+            <input type="file" id="storage-modal-file-input" class="form-control" required>
+          </div>
+          <div class="form-group">
+            <label>Description / Notes (Optional)</label>
+            <input type="text" id="storage-desc-input" class="form-control" placeholder="e.g. 3D Bucket CAD Model v2.4">
+          </div>
+          <div id="storage-upload-progress-box" style="display: none;">
+            <div style="display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 0.35rem;">
+              <span>Uploading to VPS disk...</span>
+              <span id="storage-upload-percent">0%</span>
+            </div>
+            <div style="height: 6px; background: rgba(255, 255, 255, 0.1); border-radius: 999px; overflow: hidden;">
+              <div id="storage-upload-bar" style="height: 100%; width: 0%; background: var(--accent-emerald); transition: width 0.2s;"></div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-close="modal-storage-upload">Cancel</button>
+          <button type="submit" class="btn btn-success" id="btn-submit-storage-upload">Upload File</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Generate API Key -->
+  <div class="modal-overlay" id="modal-new-key">
+    <div class="modal-window" style="max-width: 480px;">
+      <div class="modal-header">
+        <h3>Generate API Key</h3>
+        <button class="modal-close" data-close="modal-new-key">&times;</button>
+      </div>
+      <form id="form-create-key">
+        <div class="modal-body">
+          <div class="form-group">
+            <label>Key Name / Client Description *</label>
+            <input type="text" id="key-name-input" class="form-control" placeholder="e.g. Flutter Mobile Client, GitHub Actions CI" required>
+          </div>
+          <div class="form-group">
+            <label>Permission Level *</label>
+            <select id="key-role-select" class="form-control">
+              <option value="read">Read Only (Download assets, query latest releases)</option>
+              <option value="admin">Full Admin (Publish releases, upload files, delete)</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-close="modal-new-key">Cancel</button>
+          <button type="submit" class="btn btn-primary">Generate Token</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Authenticate / Set Master Key in Browser -->
+  <div class="modal-overlay" id="modal-auth">
+    <div class="modal-window" style="max-width: 480px;">
+      <div class="modal-header">
+        <h3>Admin Authentication</h3>
+        <button class="modal-close" data-close="modal-auth">&times;</button>
+      </div>
+      <form id="form-set-auth-key">
+        <div class="modal-body">
+          <p style="font-size: 0.85rem; color: var(--text-muted);">
+            Enter your Master Key or Admin API key to enable publishing releases and uploading files.
+          </p>
+          <div class="form-group">
+            <label>Master / Admin API Key</label>
+            <input type="password" id="auth-key-input" class="form-control" placeholder="Enter key..." required>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-close="modal-auth">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Key</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Checksum & Details -->
+  <div class="modal-overlay" id="modal-checksum">
+    <div class="modal-window" style="max-width: 550px;">
+      <div class="modal-header">
+        <h3>File Integrity & Checksums</h3>
+        <button class="modal-close" data-close="modal-checksum">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>File Name</label>
+          <input type="text" id="cs-filename" class="form-control" readonly>
+        </div>
+        <div class="form-group">
+          <label>SHA-256 Fingerprint</label>
+          <div style="display: flex; gap: 0.5rem;">
+            <input type="text" id="cs-sha256" class="form-control" style="font-family: var(--font-mono); font-size: 0.8rem;" readonly>
+            <button class="btn btn-secondary" id="btn-copy-sha256"><i class="ri-file-copy-line"></i></button>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>MD5 Checksum</label>
+          <div style="display: flex; gap: 0.5rem;">
+            <input type="text" id="cs-md5" class="form-control" style="font-family: var(--font-mono); font-size: 0.8rem;" readonly>
+            <button class="btn btn-secondary" id="btn-copy-md5"><i class="ri-file-copy-line"></i></button>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Direct Download Link</label>
+          <div style="display: flex; gap: 0.5rem;">
+            <input type="text" id="cs-url" class="form-control" readonly>
+            <button class="btn btn-primary" id="btn-copy-url"><i class="ri-link"></i> Copy</button>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-close="modal-checksum">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toast-container"></div>
+
+  <!-- Client-side Logic Scripts -->
+  <script src="/js/api.js"></script>
+  <script src="/js/app.js"></script>
+</body>
+</html>
