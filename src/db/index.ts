@@ -95,15 +95,17 @@ function initSchema(db: DatabaseSync): void {
 }
 
 function seedDefaultData(db: DatabaseSync): void {
-  // Check if default app exists
-  const appsCount = db.prepare('SELECT COUNT(*) as count FROM apps').get() as { count: number };
-  if (appsCount.count === 0) {
-    const now = Math.floor(Date.now() / 1000);
-    db.prepare(`
-      INSERT INTO apps (id, name, description, created_at)
-      VALUES (?, ?, ?, ?)
-    `).run('toho_egs', 'Toho EGS Guidance System', 'Excavator Guidance System client application for Android & Windows', now);
-  }
+  // Seed default apps (using INSERT OR IGNORE so new apps are added even if table is not empty)
+  const now = Math.floor(Date.now() / 1000);
+  db.prepare(`
+    INSERT OR IGNORE INTO apps (id, name, description, created_at)
+    VALUES (?, ?, ?, ?)
+  `).run('toho_egs', 'Toho EGS Guidance System', 'Excavator Guidance System client application for Android & Windows', now);
+
+  db.prepare(`
+    INSERT OR IGNORE INTO apps (id, name, description, created_at)
+    VALUES (?, ?, ?, ?)
+  `).run('toho_supervisor', 'Toho Supervisor Host App', 'Supervisor Host Android application for site management and tablet sync', now);
 
   // Check if master API key is seeded
   const keysCount = db.prepare('SELECT COUNT(*) as count FROM api_keys').get() as { count: number };
