@@ -4,6 +4,9 @@ Self-hosted **GitHub Releases Alternative** and **Universal Object Storage API**
 
 Designed specifically for distributing mobile/tablet apps (such as Flutter Toho EGS), desktop software, firmware binaries, 3D CAD models, and general assets directly from your own VPS.
 
+> 📖 **Panduan Lengkap VPS Deployment & Troubleshooting**:  
+> Silakan baca panduan lengkap step-by-step di **[docs/PANDUAN_SETUP_DAN_DEPLOY_VPS.md](docs/PANDUAN_SETUP_DAN_DEPLOY_VPS.md)** untuk petunjuk Docker Compose, Nginx Reverse Proxy, SSL Certbot, dan solusi error umum (502 Bad Gateway, broken symlink, port mapping).
+
 ---
 
 ## ✨ Features
