@@ -17,7 +17,7 @@ const API = {
       headers['x-api-key'] = key;
     }
 
-    if (!(options.body instanceof FormData)) {
+    if (options.body && !(options.body instanceof FormData)) {
       headers['Content-Type'] = 'application/json';
     }
 

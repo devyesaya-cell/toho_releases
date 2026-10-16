@@ -29,6 +29,21 @@ async function buildServer() {
   // Database initialization
   getDb();
 
+  // Allow empty body when content-type is application/json (e.g. DELETE requests)
+  fastify.addContentTypeParser('application/json', { parseAs: 'string' }, (req, body: string, done) => {
+    if (!body || body.trim().length === 0) {
+      done(null, {});
+      return;
+    }
+    try {
+      const json = JSON.parse(body);
+      done(null, json);
+    } catch (err: any) {
+      err.statusCode = 400;
+      done(err, undefined);
+    }
+  });
+
   // CORS
   await fastify.register(cors, {
     origin: true,
