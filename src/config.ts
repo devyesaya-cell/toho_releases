@@ -11,12 +11,14 @@ export interface AppConfig {
   releasesDir: string;
   filesDir: string;
   dbPath: string;
+  tempDir: string;
   maxFileSizeMb: number;
 }
 
 const rootDir = process.cwd();
 const storageDir = path.resolve(rootDir, process.env.STORAGE_DIR || './uploads');
 const dbPath = path.resolve(rootDir, process.env.DB_PATH || './data/storage.db');
+const tempDir = path.join(storageDir, 'temp_chunks');
 
 export const config: AppConfig = {
   port: parseInt(process.env.PORT || '3000', 10),
@@ -26,6 +28,7 @@ export const config: AppConfig = {
   storageDir,
   releasesDir: path.join(storageDir, 'releases'),
   filesDir: path.join(storageDir, 'files'),
+  tempDir,
   dbPath,
   maxFileSizeMb: parseInt(process.env.MAX_FILE_SIZE_MB || '500', 10),
 };
@@ -34,4 +37,5 @@ export const config: AppConfig = {
 fs.mkdirSync(config.storageDir, { recursive: true });
 fs.mkdirSync(config.releasesDir, { recursive: true });
 fs.mkdirSync(config.filesDir, { recursive: true });
+fs.mkdirSync(config.tempDir, { recursive: true });
 fs.mkdirSync(path.dirname(config.dbPath), { recursive: true });

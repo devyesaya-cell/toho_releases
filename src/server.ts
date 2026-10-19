@@ -9,6 +9,7 @@ import { fileURLToPath } from 'node:url';
 
 import { config } from './config.js';
 import { getDb } from './db/index.js';
+import { ChunkManager } from './utils/chunkManager.js';
 import { releasesRoutes } from './modules/releases/releases.routes.js';
 import { storageRoutes } from './modules/storage/storage.routes.js';
 import { keysRoutes } from './modules/keys/keys.routes.js';
@@ -28,6 +29,9 @@ async function buildServer() {
 
   // Database initialization
   getDb();
+
+  // Chunk manager initialization
+  ChunkManager.init();
 
   // Allow empty body when content-type is application/json (e.g. DELETE requests)
   fastify.addContentTypeParser('application/json', { parseAs: 'string' }, (req, body: string, done) => {

@@ -3,6 +3,7 @@ import { ReleasesService } from './releases.service.js';
 import { requireAdmin, optionalAuth } from '../auth/auth.js';
 import { calculateFileHashes, sanitizeFileName } from '../../utils/hash.js';
 import { config } from '../../config.js';
+import { ChunkManager, moveFile } from '../../utils/chunkManager.js';
 import path from 'node:path';
 import fs from 'node:fs';
 import { pipeline } from 'node:stream/promises';
@@ -128,19 +129,83 @@ export async function releasesRoutes(fastify: FastifyInstance) {
   });
 
   // ==================== RELEASE ASSETS ====================
-  // Upload asset file directly to a release (e.g. .apk, .exe, .zip)
-  fastify.post('/releases/:id/assets', { preHandler: requireAdmin }, async (req: FastifyRequest<{ Params: { id: string } }>, reply) => {
+  // Upload asset file directly to a release (supports chunked upload for 2MB limit)
+  fastify.post('/releases/:id/assets', { preHandler: requireAdmin }, async (req: FastifyRequest<{
+    Params: { id: string };
+    Querystring: {
+      uploadId?: string;
+      chunkIndex?: string;
+      totalChunks?: string;
+      fileName?: string;
+      fileSize?: string;
+    };
+  }>, reply) => {
     const release = ReleasesService.getRelease(req.params.id);
     if (!release) {
       return reply.status(404).send({ success: false, error: 'Release not found' });
     }
 
-    const data = await req.file();
-    if (!data) {
+    const q = req.query || {};
+    let uploadId = q.uploadId || '';
+    let chunkIndex = q.chunkIndex !== undefined ? parseInt(q.chunkIndex, 10) : 0;
+    let totalChunks = q.totalChunks !== undefined ? parseInt(q.totalChunks, 10) : 1;
+    let rawFileName = q.fileName || '';
+    let fileSize = q.fileSize !== undefined ? parseInt(q.fileSize, 10) : 0;
+
+    let mimeType = 'application/octet-stream';
+    let fileUploaded = false;
+    let chunkResult: { isComplete: boolean; mergedFilePath?: string } | null = null;
+
+    const parts = req.parts();
+    for await (const part of parts) {
+      if (part.type === 'field') {
+        if (part.fieldname === 'uploadId') uploadId = String(part.value || uploadId);
+        if (part.fieldname === 'chunkIndex') chunkIndex = parseInt(String(part.value || chunkIndex), 10);
+        if (part.fieldname === 'totalChunks') totalChunks = parseInt(String(part.value || totalChunks), 10);
+        if (part.fieldname === 'fileName') rawFileName = String(part.value || rawFileName);
+        if (part.fieldname === 'fileSize') fileSize = parseInt(String(part.value || fileSize), 10);
+      } else if (part.type === 'file') {
+        fileUploaded = true;
+        if (!rawFileName && part.filename) {
+          rawFileName = part.filename;
+        }
+        if (part.mimetype) {
+          mimeType = part.mimetype;
+        }
+
+        if (!uploadId) {
+          uploadId = `single_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+        }
+
+        chunkResult = await ChunkManager.saveChunk(
+          {
+            uploadId,
+            chunkIndex,
+            totalChunks,
+            fileName: rawFileName || 'asset.bin',
+            fileSize,
+          },
+          part.file
+        );
+      }
+    }
+
+    if (!fileUploaded) {
       return reply.status(400).send({ success: false, error: 'No file uploaded' });
     }
 
-    const originalName = data.filename || 'asset.bin';
+    if (!chunkResult || !chunkResult.isComplete) {
+      return reply.status(200).send({
+        success: true,
+        is_complete: false,
+        chunk_index: chunkIndex,
+        total_chunks: totalChunks,
+        upload_id: uploadId,
+      });
+    }
+
+    // Assembly complete: move to release folder and record in DB
+    const originalName = rawFileName || 'asset.bin';
     const cleanFileName = sanitizeFileName(originalName);
     const storedName = `${release.app_id}_${release.tag_name}_${Date.now()}_${cleanFileName}`;
     const targetDir = path.join(config.releasesDir, release.app_id);
@@ -149,8 +214,8 @@ export async function releasesRoutes(fastify: FastifyInstance) {
     const targetFilePath = path.join(targetDir, storedName);
     const relativeFilePath = path.join('releases', release.app_id, storedName);
 
-    // Stream file directly to disk to prevent high RAM consumption
-    await pipeline(data.file, fs.createWriteStream(targetFilePath));
+    moveFile(chunkResult.mergedFilePath!, targetFilePath);
+    ChunkManager.cleanupSession(uploadId);
 
     const stats = fs.statSync(targetFilePath);
     const hashes = await calculateFileHashes(targetFilePath);
@@ -161,12 +226,16 @@ export async function releasesRoutes(fastify: FastifyInstance) {
       stored_name: storedName,
       file_path: relativeFilePath,
       file_size: stats.size,
-      mime_type: data.mimetype || 'application/octet-stream',
+      mime_type: mimeType,
       sha256: hashes.sha256,
       md5: hashes.md5,
     });
 
-    return reply.status(201).send({ success: true, data: asset });
+    return reply.status(201).send({
+      success: true,
+      is_complete: true,
+      data: asset,
+    });
   });
 
   fastify.delete('/releases/assets/:assetId', { preHandler: requireAdmin }, async (req: FastifyRequest<{ Params: { assetId: string } }>, reply) => {

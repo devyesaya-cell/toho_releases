@@ -4,12 +4,12 @@ services:
     container_name: vps_storage_hub
     restart: unless-stopped
     ports:
-      - "3000:3000"
+      - "3005:3000"
     environment:
       - PORT=3000
       - HOST=0.0.0.0
-      - BASE_URL=http://YOUR_VPS_IP:3000
-      - MASTER_KEY=vps_secret_admin_key_2026
+      - BASE_URL=https://storage.devtoho.cloud
+      - MASTER_KEY=S4tuN0Lkeymaster
       - STORAGE_DIR=/app/uploads
       - DB_PATH=/app/data/storage.db
       - MAX_FILE_SIZE_MB=500

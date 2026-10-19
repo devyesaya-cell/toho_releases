@@ -743,9 +743,11 @@ function setupEventListeners() {
     submitBtn.disabled = true;
 
     try {
-      await API.uploadReleaseAsset(releaseId, file, (percent) => {
+      await API.uploadReleaseAsset(releaseId, file, (percent, loaded, total, currentChunk, totalChunks) => {
         progressBar.style.width = `${percent}%`;
-        progressPercent.innerText = `${percent}%`;
+        progressPercent.innerText = totalChunks > 1
+          ? `${percent}% (Bagian ${currentChunk}/${totalChunks})`
+          : `${percent}%`;
       });
       closeModal('modal-upload-asset');
       showToast(`Uploaded ${file.name} to release!`);
@@ -774,9 +776,11 @@ function setupEventListeners() {
     submitBtn.disabled = true;
 
     try {
-      await API.uploadStorageFile(bucket, file, desc, (percent) => {
+      await API.uploadStorageFile(bucket, file, desc, (percent, loaded, total, currentChunk, totalChunks) => {
         progressBar.style.width = `${percent}%`;
-        progressPercent.innerText = `${percent}%`;
+        progressPercent.innerText = totalChunks > 1
+          ? `${percent}% (Bagian ${currentChunk}/${totalChunks})`
+          : `${percent}%`;
       });
       closeModal('modal-storage-upload');
       showToast(`File ${file.name} stored in bucket "${bucket}"!`);
